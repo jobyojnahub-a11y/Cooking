@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Lecture Bot Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
+            },
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="min-h-screen flex flex-col">
+    <!-- Top Navbar -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="h-9 w-9 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/40">
+            <span class="text-xl">📚</span>
+          </div>
+          <div>
+            <h1 class="text-lg font-semibold">Lecture Bot Admin</h1>
+            <p class="text-xs text-slate-400">Manage PenPencil batches & channels</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1">
+      <div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="space-y-2">
+              {% for category, message in messages %}
+                <div class="rounded-lg px-4 py-2 text-sm
+                  {% if category == 'success' %} bg-emerald-500/10 border border-emerald-500/40 text-emerald-200
+                  {% elif category == 'error' %} bg-red-500/10 border border-red-500/40 text-red-200
+                  {% else %} bg-slate-700/40 border border-slate-600/50 text-slate-100
+                  {% endif %}
+                ">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <div class="grid gap-6 md:grid-cols-2">
+
+          <!-- Add Batch Card -->
+          <section class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-xl shadow-slate-900/60">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="text-base font-semibold flex items-center gap-2">
+                  <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-600/80 text-xs">➕</span>
+                  Connect New Batch
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Add PenPencil batch to auto-upload PDFs.</p>
+              </div>
+            </div>
+
+            <form action="{{ url_for('add_batch') }}" method="post" class="space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Batch ID</label>
+                <input name="batch_id" type="text" required
+                       class="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                       placeholder="68df734c7363e718cad6cd55">
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Bearer Token (JWT)</label>
+                <textarea name="token" rows="3" required
+                          class="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          placeholder="Paste your JWT token here"></textarea>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Telegram Channel ID</label>
+                <input name="channel_id" type="text" required
+                       class="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                       placeholder="-1001234567890">
+                <p class="mt-1 text-[10px] text-slate-500">Channel me bot ko admin bana ke /start run karein, phir ID copy karein.</p>
+              </div>
+
+              <button type="submit"
+                      class="inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-primary-500/40 hover:bg-primary-700 transition">
+                <span>Connect Batch</span>
+              </button>
+            </form>
+          </section>
+
+          <!-- Batches List Card -->
+          <section class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-xl shadow-slate-900/60">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="text-base font-semibold flex items-center gap-2">
+                  <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-700 text-xs">📋</span>
+                  Connected Batches
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Manage status, token, and delete batches.</p>
+              </div>
+            </div>
+
+            {% if batches %}
+              <div class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                {% for bid, data in batches.items() %}
+                  <div class="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-3 text-xs flex flex-col gap-2">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="flex flex-col">
+                        <span class="text-sm font-semibold text-slate-100">{{ data.name }}</span>
+                        <span class="text-[10px] text-slate-500">ID: {{ bid }}</span>
+                      </div>
+                      <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium
+                        {% if data.active %} bg-emerald-500/15 text-emerald-300 border border-emerald-500/40
+                        {% else %} bg-red-500/10 text-red-300 border border-red-500/40
+                        {% endif %}">
+                        {% if data.active %}🟢 Active{% else %}🔴 Inactive{% endif %}
+                      </span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <div class="text-[10px] text-slate-500">
+                        Channel: <span class="text-slate-300">{{ data.channel_id }}</span><br>
+                        Connected: {{ data.connected_at[:10] }}
+                      </div>
+                      <div class="flex flex-wrap gap-1">
+                        <form action="{{ url_for('toggle_batch', batch_id=bid) }}" method="post">
+                          <button class="rounded-md border border-slate-700 bg-slate-800/70 px-2 py-1 text-[10px] hover:bg-slate-700 transition">
+                            Toggle
+                          </button>
+                        </form>
+                        <form action="{{ url_for('delete_batch', batch_id=bid) }}" method="post"
+                              onsubmit="return confirm('Delete this batch?');">
+                          <button class="rounded-md border border-red-500/60 bg-red-500/10 px-2 py-1 text-[10px] text-red-200 hover:bg-red-500/20 transition">
+                            Delete
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+
+                    <form action="{{ url_for('update_token', batch_id=bid) }}" method="post" class="mt-1">
+                      <label class="block text-[10px] text-slate-400 mb-1">Update Token</label>
+                      <div class="flex gap-1">
+                        <input name="new_token" type="text"
+                               class="flex-1 rounded-md border border-slate-700 bg-slate-950/70 px-2 py-1 text-[10px] text-slate-100 placeholder:text-slate-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                               placeholder="New bearer token">
+                        <button class="rounded-md bg-primary-600 px-2 py-1 text-[10px] text-white hover:bg-primary-700 transition">
+                          Save
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-xs text-slate-500">No batches connected yet. Add your first batch from the left panel.</p>
+            {% endif %}
+          </section>
+
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
